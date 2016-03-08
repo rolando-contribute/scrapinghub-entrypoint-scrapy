@@ -102,12 +102,15 @@ def _run_pkgscript(argv):
     scriptname = argv[0]
     sys.argv = argv
 
-    def get_distribution():
-        for ep in pkg_resources.WorkingSet().iter_entry_points('scrapy'):
-            if ep.name == 'settings':
-                return ep.dist
-    d = get_distribution()
-    d.run_script(scriptname, {'__name__': '__main__'})
+    for ep in pkg_resources.iter_entry_points('scrapy'):
+        if ep.name == 'settings':
+            try:
+                ep.dist.run_script(scriptname, {'__name__': '__main__'})
+                break
+            except pkg_resources.ResolutionError:
+                continue
+    else:
+        raise pkg_resources.ResolutionError("No script named '%s'" % scriptname)
 
 
 def _run_usercode(spider, args, apisettings_func, log_handler=None):
